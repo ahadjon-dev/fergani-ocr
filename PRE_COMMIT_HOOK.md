@@ -5,7 +5,7 @@ This directory contains a pre-commit hook that automatically runs Black and isor
 ## Features
 
 - ✅ **Automatic Black formatting** - Formats Python code on commit
-- ✅ **Automatic isort sorting** - Sorts imports on commit  
+- ✅ **Automatic isort sorting** - Sorts imports on commit
 - ✅ **Flake8 syntax checking** - Prevents commits with syntax errors
 - ✅ **Auto-fix and re-stage** - Automatically formats and re-adds files
 

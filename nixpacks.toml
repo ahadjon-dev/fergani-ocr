@@ -1,0 +1,8 @@
+[phases.setup]
+aptPkgs = ["tesseract-ocr", "tesseract-ocr-eng", "tesseract-ocr-ara", "poppler-utils", "libpq-dev"]
+
+[phases.install]
+cmds = ["cd fergani && pip install -r requirements.txt"]
+
+[start]
+cmd = "cd fergani && python manage.py migrate && gunicorn fergani.wsgi:application --bind 0.0.0.0:${PORT:-8000}"
