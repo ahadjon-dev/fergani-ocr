@@ -20,7 +20,7 @@ jobs:
         image: postgres:15
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: ci_test_password_12345
+          POSTGRES_PASSWORD: ci_test_password_12345  # ggignore: generic-password (CI test database only)
           POSTGRES_DB: test_fergani_ocr
         ports:
           - 5432:5432
