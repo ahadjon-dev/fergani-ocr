@@ -121,6 +121,7 @@ class PDFExtractTextView(APIView):
         }, status=status_code)
 
 
+# Add AUTH logic here
 class MultiFormatExtractView(APIView):
     """
     Unified view for extracting text from multiple file formats
