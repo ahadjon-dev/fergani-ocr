@@ -20,7 +20,7 @@ jobs:
         image: postgres:15
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: ci_test_password_12345
           POSTGRES_DB: test_fergani_ocr
         ports:
           - 5432:5432
@@ -56,23 +56,20 @@ jobs:
       - name: 📚 Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r fergani/requirements.txt
+          pip install -r requirements.txt
           pip install flake8 black isort coverage
 
       - name: 🎨 Check code formatting with Black
-        working-directory: ./fergani
         run: |
           black --check .
         continue-on-error: false
 
       - name: 📋 Check import sorting with isort
-        working-directory: ./fergani
         run: |
           isort --check-only .
         continue-on-error: false
 
       - name: 🔍 Lint with flake8
-        working-directory: ./fergani
         run: |
           # Stop the build if there are Python syntax errors or undefined names
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -81,27 +78,24 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
       - name: 🔧 Check for missing migrations
-        working-directory: ./fergani
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_fergani_ocr
+          DATABASE_URL: postgresql://postgres:ci_test_password_12345@localhost:5432/test_fergani_ocr
           SECRET_KEY: test-secret-key-for-ci
           DEBUG: "True"
         run: |
           python manage.py makemigrations --check --dry-run --no-input
 
       - name: 🗄️ Run migrations
-        working-directory: ./fergani
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_fergani_ocr
+          DATABASE_URL: postgresql://postgres:ci_test_password_12345@localhost:5432/test_fergani_ocr
           SECRET_KEY: test-secret-key-for-ci
           DEBUG: "True"
         run: |
           python manage.py migrate --no-input
 
       - name: 🧪 Run tests with coverage
-        working-directory: ./fergani
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_fergani_ocr
+          DATABASE_URL: postgresql://postgres:ci_test_password_12345@localhost:5432/test_fergani_ocr
           SECRET_KEY: test-secret-key-for-ci
           DEBUG: "True"
         run: |
@@ -112,7 +106,7 @@ jobs:
       - name: 📊 Upload coverage to Codecov (optional)
         uses: codecov/codecov-action@v3
         with:
-          file: ./fergani/coverage.xml
+          file: ./coverage.xml
           flags: unittests
           name: codecov-fergani-ocr
         continue-on-error: true
