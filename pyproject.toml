@@ -34,9 +34,13 @@ omit = [
     "*/admin.py",
     "*/apps.py",
     "*/__init__.py",
+    "*/examples.py",
+    "*/advanced_examples.py",
+    "*/tests.py",
 ]
 
 [tool.coverage.report]
 precision = 2
 show_missing = true
 skip_covered = false
+fail_under = 90.0
