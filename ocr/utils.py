@@ -5,9 +5,20 @@ import pytesseract
 from PIL import Image
 import logging
 import io
+import os
+import shutil
 from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
+
+# Configure Tesseract path for Railway deployment
+# Check if tesseract is in PATH, if so, set it explicitly
+tesseract_cmd = shutil.which('tesseract')
+if tesseract_cmd:
+    pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
+    logger.info(f"Tesseract found at: {tesseract_cmd}")
+else:
+    logger.warning("Tesseract not found in PATH")
 
 # Optional PDF support
 try:
