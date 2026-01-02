@@ -14,29 +14,36 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
-from django.urls import path, include
+
 from django.conf import settings
 from django.conf.urls.static import static
-from ocr import views as ocr_views
+from django.contrib import admin
+from django.http import JsonResponse
+from django.urls import path
+
 from ocr import pdf_views
+from ocr import views as ocr_views
+
+
+def railway_health(request):
+    """Simple health check for Railway - returns 200 OK immediately"""
+    return JsonResponse({"status": "ok", "service": "fergani-ocr"})
+
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    
+    path("admin/", admin.site.urls),
+    # Simple health check for Railway (fast, no external dependencies)
+    path("health/", railway_health, name="railway_health"),
     # Frontend
-    path('', ocr_views.index, name='index'),
-    
+    path("", ocr_views.index, name="index"),
     # Image OCR API endpoints
-    path('api/ocr/extract/', ocr_views.OCRExtractTextView.as_view(), name='ocr_extract'),
-    path('api/ocr/health/', ocr_views.OCRHealthCheckView.as_view(), name='ocr_health'),
-    path('api/ocr/languages/', ocr_views.SupportedLanguagesView.as_view(), name='ocr_languages'),
-    
+    path("api/ocr/extract/", ocr_views.OCRExtractTextView.as_view(), name="ocr_extract"),
+    path("api/ocr/health/", ocr_views.OCRHealthCheckView.as_view(), name="ocr_health"),
+    path("api/ocr/languages/", ocr_views.SupportedLanguagesView.as_view(), name="ocr_languages"),
     # PDF OCR API endpoints
-    path('api/pdf/extract/', pdf_views.PDFExtractTextView.as_view(), name='pdf_extract'),
-    
+    path("api/pdf/extract/", pdf_views.PDFExtractTextView.as_view(), name="pdf_extract"),
     # Multi-format API endpoint (auto-detects file type)
-    path('api/extract/', pdf_views.MultiFormatExtractView.as_view(), name='multi_format_extract'),
+    path("api/extract/", pdf_views.MultiFormatExtractView.as_view(), name="multi_format_extract"),
 ]
 
 if settings.DEBUG:

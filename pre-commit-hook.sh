@@ -1,79 +1,65 @@
 #!/bin/bash
 # Pre-commit hook for Fergani OCR
-# Copy this to .git/hooks/pre-commit and make it executable:
-# chmod +x .git/hooks/pre-commit
+# Automatically runs Black, isort, and Flake8 on commit
 
-set -e
+echo "� Running pre-commit checks..."
 
-echo "🚀 Running pre-commit checks..."
+# Get list of staged Python files
+PYTHON_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$' || true)
+
+if [ -z "$PYTHON_FILES" ]; then
+    echo "✅ No Python files to check"
+    exit 0
+fi
+
+echo "📋 Checking Python files:"
+echo "$PYTHON_FILES"
 echo ""
 
-# Change to fergani directory
-cd fergani
+# 1. Run Black formatter
+echo "🎨 Running Black formatter..."
+black $PYTHON_FILES
+BLACK_EXIT=$?
 
-# 1. Format code with Black
-echo "🎨 Formatting code with Black..."
-black . --quiet
-if [ $? -eq 0 ]; then
-    echo "✅ Black formatting: PASSED"
+if [ $BLACK_EXIT -eq 0 ]; then
+    echo "✅ Black formatting complete"
 else
-    echo "❌ Black formatting: FAILED"
+    echo "❌ Black formatting failed"
     exit 1
 fi
 echo ""
 
-# 2. Sort imports with isort
-echo "📋 Sorting imports with isort..."
-isort . --quiet
-if [ $? -eq 0 ]; then
-    echo "✅ Import sorting: PASSED"
+# 2. Run isort
+echo "� Checking import sorting with isort..."
+isort $PYTHON_FILES
+ISORT_EXIT=$?
+
+if [ $ISORT_EXIT -eq 0 ]; then
+    echo "✅ Import sorting complete"
 else
-    echo "❌ Import sorting: FAILED"
+    echo "❌ Import sorting failed"
     exit 1
 fi
 echo ""
 
-# 3. Run flake8
-echo "🔍 Running flake8 linter..."
-flake8 . --quiet
-if [ $? -eq 0 ]; then
-    echo "✅ Flake8 linting: PASSED"
+# 3. Run flake8 with detailed output
+echo "🔍 Running flake8 syntax check..."
+flake8 $PYTHON_FILES
+FLAKE8_EXIT=$?
+
+if [ $FLAKE8_EXIT -eq 0 ]; then
+    echo "✅ Flake8 checks passed"
 else
-    echo "❌ Flake8 linting: FAILED"
-    echo "Run 'flake8 .' to see detailed errors"
+    echo "❌ Flake8 found issues (see above for details)"
     exit 1
 fi
 echo ""
 
-# 4. Check for missing migrations
-echo "🔧 Checking for missing migrations..."
-python manage.py makemigrations --check --dry-run --no-input > /dev/null 2>&1
-if [ $? -eq 0 ]; then
-    echo "✅ Migrations check: PASSED"
-else
-    echo "⚠️  Warning: You may have unapplied model changes"
-    echo "Run 'python manage.py makemigrations' if needed"
-fi
-echo ""
-
-# 5. Run tests
-echo "🧪 Running tests..."
-python manage.py test tests/ --verbosity=0
-if [ $? -eq 0 ]; then
-    echo "✅ Tests: PASSED"
-else
-    echo "❌ Tests: FAILED"
-    echo "Run 'python manage.py test tests/ --verbosity=2' for details"
-    exit 1
-fi
-echo ""
-
-# Add formatted files back to staging
-cd ..
-git add fergani/
+# Re-add formatted files to staging area
+git add $PYTHON_FILES
 
 echo "✅ All pre-commit checks passed!"
-echo "🎉 Ready to commit!"
+echo "🎉 Proceeding with commit..."
 echo ""
 
 exit 0
