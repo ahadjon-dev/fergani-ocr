@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fergani OCR - Text Extraction</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .container {
+        max-width: 900px;
+        width: 100%;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+      }
+
+      .header p {
+        font-size: 1.1em;
+        opacity: 0.9;
+      }
+
+      .content {
+        padding: 40px;
+      }
+
+      .upload-area {
+        border: 3px dashed #667eea;
+        border-radius: 15px;
+        padding: 50px;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        background: #f8f9ff;
+      }
+
+      .upload-area:hover {
+        border-color: #764ba2;
+        background: #f0f2ff;
+      }
+
+      .upload-area.drag-over {
+        border-color: #764ba2;
+        background: #e8ebff;
+        transform: scale(1.02);
+      }
+
+      .upload-icon {
+        font-size: 4em;
+        color: #667eea;
+        margin-bottom: 20px;
+      }
+
+      .upload-area h3 {
+        color: #333;
+        margin-bottom: 10px;
+        font-size: 1.5em;
+      }
+
+      .upload-area p {
+        color: #666;
+        margin-bottom: 20px;
+      }
+
+      #fileInput {
+        display: none;
+      }
+
+      .btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+      }
+
+      .btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .preview-container {
+        margin-top: 30px;
+        display: none;
+      }
+
+      .preview-image {
+        max-width: 100%;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .pdf-info-display {
+        margin-bottom: 20px;
+      }
+
+      .result-container {
+        margin-top: 30px;
+        display: none;
+      }
+
+      .result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+
+      .result-header h3 {
+        color: #333;
+      }
+
+      .copy-btn {
+        background: #4caf50;
+        padding: 8px 20px;
+        font-size: 0.9em;
+      }
+
+      .copy-btn:hover {
+        background: #45a049;
+      }
+
+      .result-text {
+        background: #f8f9fa;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 20px;
+        min-height: 200px;
+        max-height: 400px;
+        overflow-y: auto;
+        font-family: "Courier New", monospace;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        line-height: 1.6;
+        color: #333;
+      }
+
+      .loading {
+        display: none;
+        text-align: center;
+        margin: 30px 0;
+      }
+
+      .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .error-message {
+        background: #f44336;
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 20px;
+        display: none;
+      }
+
+      .success-message {
+        background: #4caf50;
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 20px;
+        display: none;
+      }
+
+      .file-info {
+        background: #e8f5e9;
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 20px;
+        display: none;
+      }
+
+      .file-info p {
+        margin: 5px 0;
+        color: #333;
+      }
+
+      .language-selector {
+        margin-top: 20px;
+        text-align: center;
+      }
+
+      .language-selector label {
+        color: #333;
+        font-weight: 600;
+        margin-right: 10px;
+      }
+
+      .language-selector select {
+        padding: 8px 15px;
+        border: 2px solid #667eea;
+        border-radius: 8px;
+        font-size: 1em;
+        cursor: pointer;
+        background: white;
+      }
+
+      .save-option {
+        margin-top: 15px;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .save-option label {
+        color: #333;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .save-option input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        accent-color: #667eea;
+      }
+
+      .save-option .info-icon {
+        color: #667eea;
+        cursor: help;
+        font-size: 1.2em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🔍 Fergani OCR</h1>
+        <p>Extract text from images and PDFs with AI-powered OCR technology</p>
+      </div>
+
+      <div class="content">
+        <div class="upload-area" id="uploadArea">
+          <div class="upload-icon">📄</div>
+          <h3>Drop your file here</h3>
+          <p>Supports images (PNG, JPEG, etc.) and PDF files</p>
+          <button
+            class="btn"
+            onclick="document.getElementById('fileInput').click()"
+          >
+            Choose File
+          </button>
+          <input
+            type="file"
+            id="fileInput"
+            accept="image/*,.pdf,application/pdf"
+          />
+        </div>
+
+        <div class="language-selector">
+          <label for="language">OCR Language:</label>
+          <select id="language">
+            <option value="eng">English</option>
+            <option value="ara">Arabic</option>
+            <option value="spa">Spanish</option>
+            <option value="fra">French</option>
+            <option value="deu">German</option>
+            <option value="rus">Russian</option>
+            <option value="chi_sim">Chinese (Simplified)</option>
+            <option value="jpn">Japanese</option>
+          </select>
+        </div>
+
+        <div class="save-option">
+          <label for="saveToDb">
+            <input type="checkbox" id="saveToDb" checked />
+            Save to Database
+            <span
+              class="info-icon"
+              title="Save document and extraction results to database for caching and audit trail. Duplicate files will return cached results instantly."
+              >ℹ️</span
+            >
+          </label>
+        </div>
+
+        <div class="preview-container" id="previewContainer">
+          <h3>Preview:</h3>
+          <img id="previewImage" class="preview-image" alt="Preview" />
+          <button class="btn" id="extractBtn">Extract Text</button>
+        </div>
+
+        <div class="loading" id="loading">
+          <div class="spinner"></div>
+          <p>Processing image... Please wait</p>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+        <div class="file-info" id="fileInfo"></div>
+
+        <div class="result-container" id="resultContainer">
+          <div class="result-header">
+            <h3>Extracted Text:</h3>
+            <button class="btn copy-btn" id="copyBtn">📋 Copy Text</button>
+          </div>
+          <div class="result-text" id="resultText"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const uploadArea = document.getElementById("uploadArea");
+      const fileInput = document.getElementById("fileInput");
+      const previewContainer = document.getElementById("previewContainer");
+      const previewImage = document.getElementById("previewImage");
+      const extractBtn = document.getElementById("extractBtn");
+      const loading = document.getElementById("loading");
+      const resultContainer = document.getElementById("resultContainer");
+      const resultText = document.getElementById("resultText");
+      const copyBtn = document.getElementById("copyBtn");
+      const errorMessage = document.getElementById("errorMessage");
+      const successMessage = document.getElementById("successMessage");
+      const fileInfo = document.getElementById("fileInfo");
+      const languageSelect = document.getElementById("language");
+
+      let selectedFile = null;
+
+      // Drag and drop handlers
+      uploadArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        uploadArea.classList.add("drag-over");
+      });
+
+      uploadArea.addEventListener("dragleave", () => {
+        uploadArea.classList.remove("drag-over");
+      });
+
+      uploadArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove("drag-over");
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          handleFileSelect(files[0]);
+        }
+      });
+
+      // File input change handler
+      fileInput.addEventListener("change", (e) => {
+        if (e.target.files.length > 0) {
+          handleFileSelect(e.target.files[0]);
+        }
+      });
+
+      // Handle file selection
+      function handleFileSelect(file) {
+        const isPDF =
+          file.type === "application/pdf" ||
+          file.name.toLowerCase().endsWith(".pdf");
+        const isImage = file.type.startsWith("image/");
+
+        if (!isPDF && !isImage) {
+          showError("Please select a valid image or PDF file");
+          return;
+        }
+
+        selectedFile = file;
+
+        // Remove old PDF info if exists
+        const oldPdfInfo = document.querySelector(".pdf-info-display");
+        if (oldPdfInfo) oldPdfInfo.remove();
+
+        // Show preview for images, hide for PDFs
+        if (isImage) {
+          previewImage.style.display = "block";
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            previewImage.src = e.target.result;
+            previewContainer.style.display = "block";
+            resultContainer.style.display = "none";
+            hideMessages();
+          };
+          reader.readAsDataURL(file);
+        } else if (isPDF) {
+          // For PDFs, just show the extract button without image preview
+          previewContainer.style.display = "block";
+          previewImage.style.display = "none";
+          resultContainer.style.display = "none";
+          hideMessages();
+
+          // Show PDF info
+          const pdfInfo = document.createElement("div");
+          pdfInfo.style.cssText =
+            "background: #e3f2fd; padding: 20px; border-radius: 10px; margin-bottom: 20px;";
+          pdfInfo.innerHTML = `
+            <p style="margin: 0; color: #1976d2; font-size: 1.1em; font-weight: 600;">
+              📄 PDF File Selected
+            </p>
+            <p style="margin: 10px 0 0 0; color: #555;">
+              ${file.name} (${formatBytes(file.size)})
+            </p>
+          `;
+
+          pdfInfo.className = "pdf-info-display";
+          previewContainer.insertBefore(pdfInfo, previewContainer.firstChild);
+        }
+      }
+
+      // Extract text button handler
+      extractBtn.addEventListener("click", async () => {
+        if (!selectedFile) return;
+
+        const isPDF =
+          selectedFile.type === "application/pdf" ||
+          selectedFile.name.toLowerCase().endsWith(".pdf");
+        const formData = new FormData();
+
+        // Use different endpoints for images and PDFs
+        const endpoint = isPDF ? "/api/extract/" : "/api/ocr/extract/";
+        const fileFieldName = isPDF ? "file" : "image";
+
+        formData.append(fileFieldName, selectedFile);
+        formData.append("language", languageSelect.value);
+
+        // Add save_to_db parameter
+        const saveToDbCheckbox = document.getElementById("saveToDb");
+        formData.append(
+          "save_to_db",
+          saveToDbCheckbox.checked ? "true" : "false"
+        );
+
+        loading.style.display = "block";
+        resultContainer.style.display = "none";
+        hideMessages();
+        extractBtn.disabled = true;
+
+        try {
+          const response = await fetch(endpoint, {
+            method: "POST",
+            body: formData,
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            resultText.textContent =
+              data.text || "No text detected in the file.";
+            resultContainer.style.display = "block";
+            showSuccess("Text extracted successfully!");
+            showFileInfo(data);
+          } else {
+            showError(data.error || "Failed to extract text");
+
+            // Show helpful message for PDF errors
+            if (isPDF && data.error && data.error.includes("PDF support")) {
+              showError(
+                data.error +
+                  "\n\nPDF support requires additional setup. See documentation."
+              );
+            }
+          }
+        } catch (error) {
+          showError("Network error. Please try again.");
+          console.error("Error:", error);
+        } finally {
+          loading.style.display = "none";
+          extractBtn.disabled = false;
+        }
+      });
+
+      // Copy to clipboard handler
+      copyBtn.addEventListener("click", () => {
+        const text = resultText.textContent;
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            showSuccess("Text copied to clipboard!");
+          })
+          .catch(() => {
+            showError("Failed to copy text");
+          });
+      });
+
+      // Helper functions
+      function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.style.display = "block";
+        setTimeout(() => {
+          errorMessage.style.display = "none";
+        }, 5000);
+      }
+
+      function showSuccess(message) {
+        successMessage.textContent = message;
+        successMessage.style.display = "block";
+        setTimeout(() => {
+          successMessage.style.display = "none";
+        }, 3000);
+      }
+
+      function showFileInfo(data) {
+        let infoHTML = `
+          <p><strong>Filename:</strong> ${data.filename}</p>
+          <p><strong>Size:</strong> ${formatBytes(data.file_size)}</p>
+        `;
+
+        // Add cached status indicator
+        if (data.cached !== undefined) {
+          const cachedBadge = data.cached
+            ? '<span style="color: #4caf50; font-weight: 600;">✓ Cached Result</span>'
+            : '<span style="color: #2196f3; font-weight: 600;">✓ New Extraction</span>';
+          infoHTML += `<p><strong>Status:</strong> ${cachedBadge}</p>`;
+        }
+
+        // Add document ID if saved to database
+        if (data.document_id) {
+          infoHTML += `<p><strong>Document ID:</strong> <code style="background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-size: 0.9em;">${data.document_id}</code></p>`;
+        }
+
+        // Add processing time
+        if (data.processing_time_ms !== undefined) {
+          infoHTML += `<p><strong>Processing Time:</strong> ${data.processing_time_ms}ms</p>`;
+        }
+
+        // Add PDF-specific info
+        if (data.total_pages) {
+          infoHTML += `<p><strong>Total Pages:</strong> ${data.total_pages}</p>`;
+          infoHTML += `<p><strong>Method:</strong> ${
+            data.method === "ocr" ? "OCR (Scanned)" : "Text Extraction"
+          }</p>`;
+        }
+
+        // Add image-specific info
+        if (data.image_dimensions) {
+          infoHTML += `<p><strong>Dimensions:</strong> ${data.image_dimensions}</p>`;
+        }
+
+        infoHTML += `<p><strong>Language:</strong> ${data.language}</p>`;
+
+        // Add word/character count
+        if (data.word_count !== undefined) {
+          infoHTML += `<p><strong>Words:</strong> ${data.word_count}</p>`;
+        }
+        if (data.character_count !== undefined) {
+          infoHTML += `<p><strong>Characters:</strong> ${data.character_count}</p>`;
+        }
+
+        // Add confidence score if available
+        if (
+          data.confidence &&
+          data.confidence.average_confidence !== undefined
+        ) {
+          const confidence = Math.round(data.confidence.average_confidence);
+          const confidenceColor =
+            confidence >= 90
+              ? "#4caf50"
+              : confidence >= 70
+              ? "#ff9800"
+              : "#f44336";
+          infoHTML += `<p><strong>Confidence:</strong> <span style="color: ${confidenceColor}; font-weight: 600;">${confidence}%</span></p>`;
+        }
+
+        fileInfo.innerHTML = infoHTML;
+        fileInfo.style.display = "block";
+      }
+
+      function hideMessages() {
+        errorMessage.style.display = "none";
+        successMessage.style.display = "none";
+        fileInfo.style.display = "none";
+      }
+
+      function formatBytes(bytes) {
+        if (bytes === 0) return "0 Bytes";
+        const k = 1024;
+        const sizes = ["Bytes", "KB", "MB"];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return (
+          Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i]
+        );
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "cd fergani && python manage.py migrate && gunicorn fergani.wsgi:application --bind 0.0.0.0:$PORT"
+healthcheckPath = "/api/ocr/health/"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+
+[nixpacks]
+aptPackages = ["tesseract-ocr", "tesseract-ocr-eng", "tesseract-ocr-ara", "poppler-utils"]
