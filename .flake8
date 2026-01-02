@@ -10,10 +10,11 @@ exclude =
     env,
     staticfiles,
     media
-ignore = 
-    E203,  # whitespace before ':'
-    W503,  # line break before binary operator
-    E501,  # line too long (handled by black)
+# Ignore specific error codes:
+# E203: whitespace before ':'
+# W503: line break before binary operator
+# E501: line too long (handled by black)
+ignore = E203,W503,E501
 per-file-ignores =
     __init__.py:F401
 max-complexity = 10

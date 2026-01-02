@@ -45,7 +45,6 @@ git commit -m "Your commit message"
 ```
 
 The hook runs automatically and will:
-
 - ✅ Format your code with Black
 - ✅ Sort your imports with isort
 - ✅ Check for syntax errors
