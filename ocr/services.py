@@ -546,12 +546,16 @@ class MultiFormatService:
         try:
             if MultiFormatService._is_pdf(file):
                 # Use PDFService which handles DB saving
-                return PDFService.process_pdf_extraction(
+                result = PDFService.process_pdf_extraction(
                     file, language=language, use_ocr=True, pages_param=None, save_to_db=save_to_db
                 )
+                result["file_type"] = "pdf"
+                return result
             elif MultiFormatService._is_image(file):
                 # Use OCRService which handles DB saving
-                return OCRService.process_image_extraction(file, language=language, save_to_db=save_to_db)
+                result = OCRService.process_image_extraction(file, language=language, save_to_db=save_to_db)
+                result["file_type"] = "image"
+                return result
             else:
                 raise ValueError("Unsupported file type")
 
