@@ -32,11 +32,12 @@ curl http://127.0.0.1:8001/api/ocr/languages/
 # 2. CREATING A CUSTOM VIEW - Simplest Example
 # ============================================================================
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.parsers import MultiPartParser, FormParser
 from PIL import Image
+from rest_framework import status
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from .utils import OCRProcessor
 
 
@@ -44,26 +45,22 @@ class SimpleCustomOCRView(APIView):
     """
     The simplest custom OCR view
     """
+
     parser_classes = [MultiPartParser, FormParser]
-    
+
     def post(self, request):
-        if 'image' not in request.FILES:
-            return Response({
-                'error': 'No image provided'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
+        if "image" not in request.FILES:
+            return Response({"error": "No image provided"}, status=status.HTTP_400_BAD_REQUEST)
+
         # Open image
-        image_file = request.FILES['image']
+        image_file = request.FILES["image"]
         image = Image.open(image_file)
-        
+
         # Extract text
         text = OCRProcessor.extract_text(image)
-        
+
         # Return result
-        return Response({
-            'text': text,
-            'filename': image_file.name
-        })
+        return Response({"text": text, "filename": image_file.name})
 
 
 # ============================================================================
@@ -77,37 +74,37 @@ class MyCustomOCRView(OCRExtractTextView):
     """
     Extend the base OCR view to add custom functionality
     """
-    
+
     # Override class attributes
     MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB instead of 10MB
-    
+
     def post(self, request, *args, **kwargs):
         """
         Override POST to add custom logic before/after processing
         """
         # Custom logic before processing
         print(f"Processing request from {request.META.get('REMOTE_ADDR')}")
-        
+
         # Call parent method
         response = super().post(request, *args, **kwargs)
-        
+
         # Custom logic after processing
         if response.status_code == 200:
             print(f"Successfully processed {response.data.get('filename')}")
-        
+
         return response
-    
+
     def _process_image(self, image_file, language):
         """
         Override to customize image processing
         """
         # Get default result
         result = super()._process_image(image_file, language)
-        
+
         # Add custom fields
-        result['custom_field'] = 'custom_value'
-        result['processed_by'] = 'MyCustomOCRView'
-        
+        result["custom_field"] = "custom_value"
+        result["processed_by"] = "MyCustomOCRView"
+
         return result
 
 
@@ -115,8 +112,8 @@ class MyCustomOCRView(OCRExtractTextView):
 # 4. ADDING AUTHENTICATION - Production Ready
 # ============================================================================
 
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 
 class AuthenticatedOCRView(OCRExtractTextView):
@@ -133,15 +130,16 @@ class AuthenticatedOCRView(OCRExtractTextView):
       -H "Authorization: Token <your-token>" \
       -F "image=@image.png"
     """
+
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
-    
+
     def _process_image(self, image_file, language):
         result = super()._process_image(image_file, language)
-        
+
         # Add user info to result
-        result['processed_by_user'] = self.request.user.username
-        
+        result["processed_by_user"] = self.request.user.username
+
         return result
 
 
@@ -149,17 +147,17 @@ class AuthenticatedOCRView(OCRExtractTextView):
 # 5. ADDING RATE LIMITING - Prevent Abuse
 # ============================================================================
 
-from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 
 
 class CustomThrottle(UserRateThrottle):
-    rate = '10/min'  # 10 requests per minute
+    rate = "10/min"  # 10 requests per minute
 
 
 class ThrottledOCRView(OCRExtractTextView):
     """
     OCR view with rate limiting
-    
+
     Configure in settings.py:
     REST_FRAMEWORK = {
         'DEFAULT_THROTTLE_RATES': {
@@ -168,6 +166,7 @@ class ThrottledOCRView(OCRExtractTextView):
         }
     }
     """
+
     throttle_classes = [CustomThrottle]
 
 
@@ -175,39 +174,41 @@ class ThrottledOCRView(OCRExtractTextView):
 # 6. IMAGE ENHANCEMENT - Better OCR Results
 # ============================================================================
 
+
 class EnhancedOCRView(OCRExtractTextView):
     """
     OCR view with automatic image enhancement
     """
-    
+
     def _process_image(self, image_file, language):
         # Open image
         image = Image.open(image_file)
-        
+
         # Enhance image before OCR
         enhanced_image = OCRProcessor.preprocess_image(image, enhance=True)
-        
+
         # Extract text from enhanced image
         text = OCRProcessor.extract_text(enhanced_image, language=language)
-        
+
         # Get image info
         image_info = OCRProcessor.get_image_info(enhanced_image)
-        
+
         return {
-            'success': True,
-            'text': text,
-            'enhanced': True,
-            'filename': image_file.name,
-            'file_size': image_file.size,
-            'image_dimensions': f"{image_info['width']}x{image_info['height']}",
-            'character_count': len(text.strip()),
-            'word_count': len(text.strip().split())
+            "success": True,
+            "text": text,
+            "enhanced": True,
+            "filename": image_file.name,
+            "file_size": image_file.size,
+            "image_dimensions": f"{image_info['width']}x{image_info['height']}",
+            "character_count": len(text.strip()),
+            "word_count": len(text.strip().split()),
         }
 
 
 # ============================================================================
 # 7. BATCH PROCESSING - Multiple Images
 # ============================================================================
+
 
 class BatchOCRView(APIView):
     """
@@ -220,76 +221,61 @@ class BatchOCRView(APIView):
       -F "images=@image3.png" \
       -F "language=eng"
     """
+
     parser_classes = [MultiPartParser, FormParser]
-    
+
     def post(self, request):
-        images = request.FILES.getlist('images')
-        
+        images = request.FILES.getlist("images")
+
         if not images:
-            return Response({
-                'success': False,
-                'error': 'No images provided'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
+            return Response({"success": False, "error": "No images provided"}, status=status.HTTP_400_BAD_REQUEST)
+
         results = []
-        language = request.data.get('language', 'eng')
-        
+        language = request.data.get("language", "eng")
+
         for image_file in images:
             try:
                 image = Image.open(image_file)
                 text = OCRProcessor.extract_text(image, language=language)
-                
-                results.append({
-                    'filename': image_file.name,
-                    'success': True,
-                    'text': text,
-                    'word_count': len(text.strip().split())
-                })
+
+                results.append(
+                    {"filename": image_file.name, "success": True, "text": text, "word_count": len(text.strip().split())}
+                )
             except Exception as e:
-                results.append({
-                    'filename': image_file.name,
-                    'success': False,
-                    'error': str(e)
-                })
-        
-        return Response({
-            'success': True,
-            'total_images': len(images),
-            'processed': len([r for r in results if r['success']]),
-            'failed': len([r for r in results if not r['success']]),
-            'results': results
-        })
+                results.append({"filename": image_file.name, "success": False, "error": str(e)})
+
+        return Response(
+            {
+                "success": True,
+                "total_images": len(images),
+                "processed": len([r for r in results if r["success"]]),
+                "failed": len([r for r in results if not r["success"]]),
+                "results": results,
+            }
+        )
 
 
 # ============================================================================
 # 8. CUSTOM TESSERACT CONFIG - Advanced OCR
 # ============================================================================
 
+
 class DigitsOnlyOCRView(OCRExtractTextView):
     """
     OCR optimized for extracting only numbers
-    
+
     Useful for invoices, receipts, ID numbers, etc.
     """
-    
+
     def _process_image(self, image_file, language):
         image = Image.open(image_file)
-        
+
         # Custom Tesseract config for digits only
-        config = '--psm 6 -c tessedit_char_whitelist=0123456789'
-        
-        text = OCRProcessor.extract_text(
-            image, 
-            language=language,
-            config=config
-        )
-        
-        return {
-            'success': True,
-            'text': text,
-            'mode': 'digits_only',
-            'filename': image_file.name
-        }
+        config = "--psm 6 -c tessedit_char_whitelist=0123456789"
+
+        text = OCRProcessor.extract_text(image, language=language, config=config)
+
+        return {"success": True, "text": text, "mode": "digits_only", "filename": image_file.name}
 
 
 # ============================================================================
