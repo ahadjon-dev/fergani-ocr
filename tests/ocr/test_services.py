@@ -270,15 +270,15 @@ class TestOCRServiceErrorHandling(TestCase):
     def test_process_image_cached_result(self):
         """Test returning cached result for duplicate image"""
         image_file = self._create_test_image()
-        
+
         # Process once to cache
         first_result = OCRService.process_image_extraction(image_file, language="eng", save_to_db=True)
         doc_id1 = first_result["document_id"]
-        
+
         # Process same image again
         image_file2 = self._create_test_image()  # Same content
         second_result = OCRService.process_image_extraction(image_file2, language="eng", save_to_db=True)
-        
+
         # Should return cached result
         self.assertTrue(second_result.get("cached", False))
         self.assertEqual(second_result["document_id"], doc_id1)
@@ -287,24 +287,24 @@ class TestOCRServiceErrorHandling(TestCase):
     def test_process_image_extraction_error_without_db(self, mock_extract):
         """Test error handling when OCR fails without DB save"""
         mock_extract.side_effect = Exception("OCR engine error")
-        
+
         image_file = self._create_test_image()
-        
+
         with self.assertRaises(Exception) as context:
             OCRService.process_image_extraction(image_file, language="eng", save_to_db=False)
-        
+
         self.assertIn("OCR engine error", str(context.exception))
 
     @patch("ocr.services.OCRProcessor.extract_text")
     def test_process_image_extraction_error_with_db(self, mock_extract):
         """Test error handling when OCR fails with DB save enabled"""
         mock_extract.side_effect = Exception("OCR engine error")
-        
+
         image_file = self._create_test_image()
-        
+
         with self.assertRaises(Exception):
             OCRService.process_image_extraction(image_file, language="eng", save_to_db=True)
-        
+
         # Check that error was logged
         error_logs = OCRProcessingLog.objects.filter(level="error")
         self.assertTrue(error_logs.exists())
@@ -313,12 +313,12 @@ class TestOCRServiceErrorHandling(TestCase):
     def test_get_health_status_version_error(self, mock_installed):
         """Test health status when version check fails"""
         mock_installed.return_value = True
-        
+
         # Even with error, should still return status
         with patch("pytesseract.get_tesseract_version") as mock_version:
             mock_version.side_effect = Exception("Version check failed")
             result = OCRService.get_health_status()
-        
+
         # Should still return a result
         self.assertIn("status", result)
         self.assertIn("tesseract_installed", result)
@@ -330,10 +330,10 @@ class TestPDFServiceErrorHandling(TestCase):
     def test_pdf_service_validation(self):
         """Test PDF service validation methods"""
         pdf_file = SimpleUploadedFile("test.pdf", b"%PDF-1.4", content_type="application/pdf")
-        
+
         # Test validation with correct signature
-        is_valid, error_msg = PDFService.validate_pdf_file(pdf_file, 10*1024*1024)
-        
+        is_valid, error_msg = PDFService.validate_pdf_file(pdf_file, 10 * 1024 * 1024)
+
         # File is small enough and correct type
         self.assertTrue(is_valid or error_msg is not None)
 
@@ -352,9 +352,9 @@ class TestMultiFormatServiceErrorHandling(TestCase):
     def test_process_file_image_with_db_save(self):
         """Test processing image file with database save"""
         image_file = self._create_test_image()
-        
+
         result = MultiFormatService.process_file(image_file, language="eng", save_to_db=True)
-        
+
         self.assertTrue(result["success"])
         self.assertEqual(result["file_type"], "image")
 
@@ -362,7 +362,7 @@ class TestMultiFormatServiceErrorHandling(TestCase):
         """Test error handling when PDF processing fails"""
         # Create an invalid PDF that will cause an error (but catches it)
         pdf_file = SimpleUploadedFile("test.pdf", b"not a real pdf", content_type="application/pdf")
-        
+
         # Use try/except to handle the error and verify it's caught properly
         try:
             result = MultiFormatService.process_file(pdf_file, language="eng", save_to_db=False)
