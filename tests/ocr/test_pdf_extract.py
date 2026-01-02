@@ -4,6 +4,7 @@ Tests: POST /api/pdf/extract/
 """
 
 import io
+from unittest.mock import patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
@@ -118,3 +119,56 @@ class TestPDFExtractText(APITestCase):
 
         self.assertIsInstance(features, list)
         self.assertGreater(len(features), 0)
+
+
+class TestPDFExtractErrorHandling(APITestCase):
+    """Test error handling in PDF extraction endpoint"""
+
+    def _create_test_pdf(self, content=b"Test PDF content"):
+        """Helper to create test PDF"""
+        return SimpleUploadedFile("test.pdf", content, content_type="application/pdf")
+
+    @patch("ocr.pdf_views.OCRProcessor.is_pdf_support_available")
+    def test_pdf_support_not_available(self, mock_support):
+        """Test error when PDF support is not available"""
+        mock_support.return_value = False
+
+        pdf_file = self._create_test_pdf()
+        data = {"file": pdf_file}
+        response = self.client.post("/api/pdf/extract/", data, format="multipart")
+
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        response_data = response.json()
+        self.assertFalse(response_data["success"])
+        self.assertIn("PDF support not available", response_data["error"])
+
+    @patch("ocr.pdf_views.OCRProcessor.is_pdf_support_available")
+    @patch("ocr.pdf_views.PDFService.process_pdf_extraction")
+    def test_import_error_handling(self, mock_process, mock_support):
+        """Test handling of ImportError during processing"""
+        mock_support.return_value = True
+        mock_process.side_effect = ImportError("Missing library")
+
+        pdf_file = self._create_test_pdf()
+        data = {"file": pdf_file}
+        response = self.client.post("/api/pdf/extract/", data, format="multipart")
+
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        response_data = response.json()
+        self.assertFalse(response_data["success"])
+
+    @patch("ocr.pdf_views.OCRProcessor.is_pdf_support_available")
+    @patch("ocr.pdf_views.PDFService.process_pdf_extraction")
+    def test_generic_processing_error(self, mock_process, mock_support):
+        """Test handling of generic processing errors"""
+        mock_support.return_value = True
+        mock_process.side_effect = Exception("Processing failed")
+
+        pdf_file = self._create_test_pdf()
+        data = {"file": pdf_file}
+        response = self.client.post("/api/pdf/extract/", data, format="multipart")
+
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        response_data = response.json()
+        self.assertFalse(response_data["success"])
+        self.assertIn("Error processing PDF", response_data["error"])

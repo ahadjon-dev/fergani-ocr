@@ -100,16 +100,7 @@ jobs:
           DEBUG: "True"
         run: |
           coverage run --source='ocr' manage.py test tests/
-          coverage report --fail-under=70
-          coverage xml
-
-      - name: 📊 Upload coverage to Codecov (optional)
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.xml
-          flags: unittests
-          name: codecov-fergani-ocr
-        continue-on-error: true
+          coverage report --fail-under=90
 
       - name: ✅ All checks passed
         run: |
@@ -118,3 +109,4 @@ jobs:
           echo "✅ Linting: OK"
           echo "✅ Migrations: OK"
           echo "✅ Tests: OK"
+          echo "✅ Coverage: OK"
