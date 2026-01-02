@@ -77,31 +77,61 @@ python-3.11.9
 
 ## Railway Dashboard Configuration
 
-### Service Settings
+### CRITICAL: Root Directory Setting
 
-1. **Root Directory**: `fergani`
+**⚠️ DO NOT SET ROOT DIRECTORY - LEAVE IT EMPTY! ⚠️**
 
-   - Navigate to: Service → Settings → Source
-   - Set: Root Directory = `fergani`
-   - This tells Railway that your Django project is in the `fergani/` subdirectory
+**Your Repository Structure:**
 
-2. **Environment Variables** (Service → Variables)
+```
+GitHub Repo (fergani-ocr) - what Railway clones:
+└── fergani/               ← .git is HERE (Git root)
+    ├── manage.py          ← Django project root
+    ├── requirements.txt
+    ├── runtime.txt
+    ├── railway.json
+    ├── nixpacks.toml
+    ├── Procfile
+    ├── fergani/           ← Django settings package
+    │   ├── __init__.py
+    │   ├── settings.py
+    │   ├── urls.py
+    │   └── wsgi.py
+    └── ocr/               ← Django app
+```
 
-   ```
-   SECRET_KEY=<generate-using-command-below>
-   DEBUG=False
-   ALLOWED_HOSTS=<your-app>.up.railway.app
-   CSRF_TRUSTED_ORIGINS=https://<your-app>.up.railway.app
-   DATABASE_URL=<auto-set-by-postgresql-plugin>
-   ```
+**Why Root Directory MUST be EMPTY:**
 
-   **Generate SECRET_KEY:**
+- Railway clones from GitHub and sees the `.git` directory location as root
+- Your `.git` is at `fergani-ocr/fergani/` - Railway treats this as `/app/`
+- At `/app/` Railway finds: `manage.py`, `requirements.txt`, `railway.json` ✅
+- If you set Root Directory to "fergani", Railway looks at `/app/fergani/` (your settings folder) ❌
+- Result: Can't find `manage.py` → "Script start.sh not found" error
 
-   ```bash
-   cd /home/ahadjon/work/fergani/fergani-ocr/fergani
-   source /home/ahadjon/work/fergani/venv/bin/activate
-   python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
-   ```
+**What to do in Railway UI:**
+
+1. Go to: Service → Settings → Source
+2. Find "Root Directory" field
+3. **DELETE any value and leave it BLANK/EMPTY**
+4. Click Save
+
+### Environment Variables (Service → Variables)
+
+```
+SECRET_KEY=<generate-using-command-below>
+DEBUG=False
+ALLOWED_HOSTS=<your-app>.up.railway.app
+CSRF_TRUSTED_ORIGINS=https://<your-app>.up.railway.app
+DATABASE_URL=<auto-set-by-postgresql-plugin>
+```
+
+**Generate SECRET_KEY:**
+
+```bash
+cd /home/ahadjon/work/fergani/fergani-ocr/fergani
+source /home/ahadjon/work/fergani/venv/bin/activate
+python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
+```
 
 3. **PostgreSQL Database**
    - In Railway Dashboard: Project → New → Database → PostgreSQL
@@ -125,7 +155,7 @@ git push origin feature/setup-root
 2. Select your project
 3. Click on your service
 4. Go to Settings → Source
-5. Set **Root Directory** to: `fergani`
+5. **CRITICAL: Ensure "Root Directory" field is EMPTY (delete "fergani" if it's there)**
 6. Click "Save"
 
 ### 3. Set Environment Variables
