@@ -13,8 +13,13 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 
 # Quick-start development settings - unsuitable for production
@@ -45,7 +50,9 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
+    "drf_yasg",  # Swagger/OpenAPI documentation
     "ocr",
+    "llm_ocr",  # LLM-based OCR using Hugging Face
 ]
 
 MIDDLEWARE = [
@@ -188,4 +195,8 @@ REST_FRAMEWORK = {
 
 # Tesseract OCR Configuration
 # Explicitly set tesseract command path for Railway deployment
-TESSERACT_CMD = os.environ.get('TESSERACT_CMD', '/usr/bin/tesseract')
+TESSERACT_CMD = os.environ.get("TESSERACT_CMD", "/usr/bin/tesseract")
+
+# Hugging Face API Configuration
+# For LLM-based OCR using vision-language models
+HUGGINGFACE_API_KEY = os.environ.get("HUGGINGFACE_API_KEY", "")

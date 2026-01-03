@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class OcrConfig(AppConfig):
+class LlmOcrConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "ocr"
+    name = "llm_ocr"
