@@ -185,3 +185,7 @@ REST_FRAMEWORK = {
         "rest_framework.parsers.JSONParser",
     ],
 }
+
+# Tesseract OCR Configuration
+# Explicitly set tesseract command path for Railway deployment
+TESSERACT_CMD = os.environ.get('TESSERACT_CMD', '/usr/bin/tesseract')

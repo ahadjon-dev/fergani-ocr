@@ -6,19 +6,73 @@ from PIL import Image
 import logging
 import io
 import os
-import shutil
+import subprocess
 from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
-# Configure Tesseract path for Railway deployment
-# Check if tesseract is in PATH, if so, set it explicitly
-tesseract_cmd = shutil.which('tesseract')
+# Configure Tesseract path for deployment
+def find_tesseract_cmd():
+    """Find tesseract executable using multiple methods"""
+    
+    # Method 1: Check Django settings (if available)
+    try:
+        from django.conf import settings
+        if hasattr(settings, 'TESSERACT_CMD') and settings.TESSERACT_CMD:
+            if os.path.exists(settings.TESSERACT_CMD):
+                return settings.TESSERACT_CMD
+    except Exception:
+        pass  # Settings not configured yet
+    
+    # Method 2: Try to run 'which tesseract' command
+    try:
+        result = subprocess.run(
+            ['which', 'tesseract'],
+            capture_output=True,
+            text=True,
+            timeout=2
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            cmd_path = result.stdout.strip()
+            if os.path.exists(cmd_path):
+                return cmd_path
+    except Exception as e:
+        logger.debug(f"'which' command failed: {e}")
+    
+    # Method 3: Check common installation paths
+    common_paths = [
+        '/usr/bin/tesseract',
+        '/usr/local/bin/tesseract',
+        '/bin/tesseract',
+        '/opt/homebrew/bin/tesseract',
+    ]
+    
+    for path in common_paths:
+        if os.path.exists(path):
+            return path
+    
+    # Method 4: Try running tesseract directly (might work if it's in PATH)
+    try:
+        result = subprocess.run(
+            ['tesseract', '--version'],
+            capture_output=True,
+            text=True,
+            timeout=2
+        )
+        if result.returncode == 0:
+            return 'tesseract'  # It's in PATH
+    except Exception:
+        pass
+    
+    return None
+
+# Set tesseract command
+tesseract_cmd = find_tesseract_cmd()
 if tesseract_cmd:
     pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
-    logger.info(f"Tesseract found at: {tesseract_cmd}")
+    logger.info(f"Tesseract configured at: {tesseract_cmd}")
 else:
-    logger.warning("Tesseract not found in PATH")
+    logger.error("Tesseract executable not found! OCR functionality will not work.")
 
 # Optional PDF support
 try:
