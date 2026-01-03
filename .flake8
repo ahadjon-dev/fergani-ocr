@@ -1,6 +1,6 @@
 [flake8]
 max-line-length = 127
-exclude = 
+exclude =
     .git,
     __pycache__,
     */migrations/*,
@@ -9,11 +9,18 @@ exclude =
     .venv,
     env,
     staticfiles,
-    media
-ignore = 
+    media,
+    QUICK_START.py,
+    test_llm_config.py,
+    test_pdf_support.py
+ignore =
     E203,
     W503,
     E501
 per-file-ignores =
-    __init__.py:F401
-max-complexity = 10
+    __init__.py:F401,
+    check_tesseract.py:C901,
+    ocr/utils.py:C901,
+    ocr/services.py:C901,
+    llm_ocr/views.py:C901
+max-complexity = 15

@@ -282,6 +282,124 @@
         cursor: help;
         font-size: 1.2em;
       }
+
+      .ocr-engine-selector {
+        margin-top: 20px;
+        padding: 20px;
+        background: #f8f9ff;
+        border-radius: 10px;
+        border: 2px solid #e0e4ff;
+      }
+
+      .ocr-engine-selector h4 {
+        color: #333;
+        margin-bottom: 15px;
+        font-size: 1.1em;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .engine-options {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .engine-option {
+        flex: 1;
+        min-width: 200px;
+        padding: 15px;
+        background: white;
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+      }
+
+      .engine-option:hover {
+        border-color: #667eea;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+      }
+
+      .engine-option.selected {
+        border-color: #667eea;
+        background: #f0f2ff;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      }
+
+      .engine-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+      }
+
+      .engine-option label {
+        cursor: pointer;
+        display: block;
+        pointer-events: none;
+      }
+
+      .engine-name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+        font-size: 1.1em;
+      }
+
+      .engine-description {
+        color: #666;
+        font-size: 0.9em;
+        line-height: 1.4;
+      }
+
+      .engine-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.75em;
+        font-weight: 600;
+        margin-left: 8px;
+      }
+
+      .badge-fast {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .badge-ai {
+        background: #d1ecf1;
+        color: #0c5460;
+      }
+
+      .model-selector {
+        margin-top: 15px;
+        display: none;
+      }
+
+      .model-selector label {
+        display: block;
+        color: #333;
+        font-weight: 500;
+        margin-bottom: 8px;
+      }
+
+      .model-selector select {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 1em;
+        background: white;
+        cursor: pointer;
+        transition: border-color 0.3s ease;
+      }
+
+      .model-selector select:focus {
+        outline: none;
+        border-color: #667eea;
+      }
     </style>
   </head>
   <body>
@@ -317,6 +435,62 @@
             <option value="uzb">Uzbek (Latin)</option>
             <option value="uzb_cyrl">Uzbek (Cyrillic)</option>
           </select>
+        </div>
+
+        <div class="ocr-engine-selector">
+          <h4>🔧 OCR Engine:</h4>
+          <div class="engine-options">
+            <div class="engine-option selected" id="engineTesseract">
+              <input
+                type="radio"
+                name="ocrEngine"
+                id="engineTesseractRadio"
+                value="tesseract"
+                checked
+              />
+              <label for="engineTesseractRadio">
+                <div class="engine-name">
+                  ⚡ Tesseract OCR
+                  <span class="engine-badge badge-fast">Fast</span>
+                </div>
+                <div class="engine-description">
+                  Traditional OCR engine. Best for clean scans and typed text.
+                  Fast and free.
+                </div>
+              </label>
+            </div>
+
+            <div class="engine-option" id="engineLLM">
+              <input
+                type="radio"
+                name="ocrEngine"
+                id="engineLLMRadio"
+                value="llm"
+              />
+              <label for="engineLLMRadio">
+                <div class="engine-name">
+                  🤖 AI Vision Models
+                  <span class="engine-badge badge-ai">Advanced</span>
+                </div>
+                <div class="engine-description">
+                  AI-powered OCR using vision-language models. Better for
+                  complex layouts and handwriting.
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="model-selector" id="modelSelector">
+            <label for="llmModel">AI Model:</label>
+            <select id="llmModel">
+              <option value="deepseek-vision">
+                DeepSeek Vision (Recommended)
+              </option>
+              <option value="qwen-vision">Qwen2 Vision (Fast)</option>
+              <option value="llava">LLaVA 1.5 (Balanced)</option>
+              <option value="microsoft-phi">Phi-3 Vision (Lightweight)</option>
+            </select>
+          </div>
         </div>
 
         <div class="save-option">
@@ -371,7 +545,43 @@
       const fileInfo = document.getElementById("fileInfo");
       const languageSelect = document.getElementById("language");
 
+      // OCR Engine selection elements
+      const engineTesseract = document.getElementById("engineTesseract");
+      const engineLLM = document.getElementById("engineLLM");
+      const engineTesseractRadio = document.getElementById(
+        "engineTesseractRadio"
+      );
+      const engineLLMRadio = document.getElementById("engineLLMRadio");
+      const modelSelector = document.getElementById("modelSelector");
+      const llmModelSelect = document.getElementById("llmModel");
+
       let selectedFile = null;
+
+      // Handle engine selection
+      function handleEngineChange() {
+        if (engineLLMRadio.checked) {
+          engineTesseract.classList.remove("selected");
+          engineLLM.classList.add("selected");
+          modelSelector.style.display = "block";
+        } else {
+          engineTesseract.classList.add("selected");
+          engineLLM.classList.remove("selected");
+          modelSelector.style.display = "none";
+        }
+      }
+
+      engineTesseract.addEventListener("click", () => {
+        engineTesseractRadio.checked = true;
+        handleEngineChange();
+      });
+
+      engineLLM.addEventListener("click", () => {
+        engineLLMRadio.checked = true;
+        handleEngineChange();
+      });
+
+      engineTesseractRadio.addEventListener("change", handleEngineChange);
+      engineLLMRadio.addEventListener("change", handleEngineChange);
 
       // Drag and drop handlers
       uploadArea.addEventListener("dragover", (e) => {
@@ -462,9 +672,31 @@
           selectedFile.name.toLowerCase().endsWith(".pdf");
         const formData = new FormData();
 
-        // Use different endpoints for images and PDFs
-        const endpoint = isPDF ? "/api/extract/" : "/api/ocr/extract/";
-        const fileFieldName = isPDF ? "file" : "image";
+        // Check which OCR engine is selected
+        const useLLM = engineLLMRadio.checked;
+
+        // Determine endpoint based on file type and engine
+        let endpoint;
+        let fileFieldName;
+
+        if (useLLM) {
+          // LLM OCR only supports images currently
+          if (isPDF) {
+            showError(
+              "AI Vision Models currently only support image files. Please use Tesseract OCR for PDFs."
+            );
+            return;
+          }
+          endpoint = "/api/v1/llm-ocr/extract/";
+          fileFieldName = "image";
+          formData.append("model", llmModelSelect.value);
+        } else {
+          // Traditional OCR
+          endpoint = isPDF
+            ? "/api/v1/ocr/multi-format/extract/"
+            : "/api/v1/ocr/extract/";
+          fileFieldName = isPDF ? "file" : "image";
+        }
 
         formData.append(fileFieldName, selectedFile);
         formData.append("language", languageSelect.value);
@@ -491,9 +723,18 @@
 
           if (data.success) {
             resultText.textContent =
-              data.text || "No text detected in the file.";
+              data.text ||
+              data.extracted_text ||
+              "No text detected in the file.";
             resultContainer.style.display = "block";
-            showSuccess("Text extracted successfully!");
+
+            // Show appropriate success message based on engine
+            const engineName = useLLM
+              ? `AI Model (${
+                  llmModelSelect.options[llmModelSelect.selectedIndex].text
+                })`
+              : "Tesseract OCR";
+            showSuccess(`Text extracted successfully using ${engineName}!`);
             showFileInfo(data);
           } else {
             showError(data.error || "Failed to extract text");

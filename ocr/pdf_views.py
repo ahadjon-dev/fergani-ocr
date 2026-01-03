@@ -1,13 +1,18 @@
 """
 PDF OCR Views for text extraction from PDF files
 """
-from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.response import Response
-from rest_framework import status
-from .services import PDFService, MultiFormatService
-from .utils import OCRProcessor
+
 import logging
+
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .services import MultiFormatService, PDFService
+from .utils import OCRProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -15,18 +20,18 @@ logger = logging.getLogger(__name__)
 class PDFExtractTextView(APIView):
     """
     API View for extracting text from PDF files
-    
+
     Supports both text-based PDFs and scanned PDFs (using OCR)
-    
+
     Usage:
         POST /api/pdf/extract/
-        Body: 
+        Body:
             - file: PDF file (required)
             - language: Language code (optional, default: 'eng')
             - use_ocr: Whether to use OCR for scanned PDFs (optional, default: true)
             - pages: Comma-separated page numbers to extract (optional, e.g., "1,3,5")
             - save_to_db: Save to database (optional, default: true, accepts: true/false/1/0/yes/no)
-    
+
     Response:
         {
             "success": true,
@@ -42,91 +47,129 @@ class PDFExtractTextView(APIView):
             ]
         }
     """
-    
+
     parser_classes = [MultiPartParser, FormParser]
-    
+
     # Maximum file size (50MB for PDFs)
     MAX_FILE_SIZE = 50 * 1024 * 1024
-    
+
+    @swagger_auto_schema(
+        operation_description="Extract text from PDF files using text extraction or OCR",
+        operation_summary="PDF Text Extraction",
+        manual_parameters=[
+            openapi.Parameter(
+                "file", openapi.IN_FORM, description="PDF file to extract text from", type=openapi.TYPE_FILE, required=True
+            ),
+            openapi.Parameter(
+                "language",
+                openapi.IN_FORM,
+                description="Language code for OCR (if needed)",
+                type=openapi.TYPE_STRING,
+                default="eng",
+                enum=["eng", "kor", "uzb", "uzb_cyrl"],
+            ),
+            openapi.Parameter(
+                "use_ocr", openapi.IN_FORM, description="Use OCR for scanned PDFs", type=openapi.TYPE_BOOLEAN, default=True
+            ),
+            openapi.Parameter(
+                "pages",
+                openapi.IN_FORM,
+                description='Comma-separated page numbers to extract (e.g., "1,3,5")',
+                type=openapi.TYPE_STRING,
+            ),
+            openapi.Parameter(
+                "save_to_db",
+                openapi.IN_FORM,
+                description="Save extraction results to database",
+                type=openapi.TYPE_BOOLEAN,
+                default=True,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Text extracted successfully",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "success": openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        "text": openapi.Schema(type=openapi.TYPE_STRING),
+                        "filename": openapi.Schema(type=openapi.TYPE_STRING),
+                        "total_pages": openapi.Schema(type=openapi.TYPE_INTEGER),
+                        "method": openapi.Schema(type=openapi.TYPE_STRING),
+                    },
+                ),
+            ),
+            400: openapi.Response(description="Invalid input"),
+            500: openapi.Response(description="Server error"),
+        },
+        tags=["PDF OCR"],
+    )
     def post(self, request, *args, **kwargs):
         """
         Handle POST request to extract text from PDF
         """
         # Check if PDF support is available
         if not OCRProcessor.is_pdf_support_available():
-            return Response({
-                'success': False,
-                'error': 'PDF support not available',
-                'help': 'Install required packages: pip install PyPDF2 pdf2image poppler-utils'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        # Validate file presence
-        if 'file' not in request.FILES:
-            return self._error_response(
-                'No PDF file provided',
-                status.HTTP_400_BAD_REQUEST
+            return Response(
+                {
+                    "success": False,
+                    "error": "PDF support not available",
+                    "help": "Install required packages: pip install PyPDF2 pdf2image poppler-utils",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-        
-        pdf_file = request.FILES['file']
-        
+
+        # Validate file presence
+        if "file" not in request.FILES:
+            return self._error_response("No PDF file provided", status.HTTP_400_BAD_REQUEST)
+
+        pdf_file = request.FILES["file"]
+
         # Validate file using service layer
         is_valid, error_message = PDFService.validate_pdf_file(pdf_file, self.MAX_FILE_SIZE)
         if not is_valid:
             return self._error_response(error_message, status.HTTP_400_BAD_REQUEST)
-        
+
         try:
             # Get parameters
-            language = request.data.get('language', 'eng')
-            use_ocr = request.data.get('use_ocr', 'true').lower() == 'true'
-            pages_param = request.data.get('pages', None)
-            save_to_db = request.data.get('save_to_db', 'true').lower() in ['true', '1', 'yes']
-            
+            language = request.data.get("language", "eng")
+            use_ocr = request.data.get("use_ocr", "true").lower() == "true"
+            pages_param = request.data.get("pages", None)
+            save_to_db = request.data.get("save_to_db", "true").lower() in ["true", "1", "yes"]
+
             # Process PDF using service layer
             response_data = PDFService.process_pdf_extraction(
-                pdf_file,
-                language=language,
-                use_ocr=use_ocr,
-                pages_param=pages_param,
-                save_to_db=save_to_db
+                pdf_file, language=language, use_ocr=use_ocr, pages_param=pages_param, save_to_db=save_to_db
             )
-            
+
             return Response(response_data, status=status.HTTP_200_OK)
-            
+
         except ImportError as e:
-            return self._error_response(
-                str(e),
-                status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return self._error_response(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
             logger.error(f"Error processing PDF: {str(e)}")
-            return self._error_response(
-                f'Error processing PDF: {str(e)}',
-                status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
+            return self._error_response(f"Error processing PDF: {str(e)}", status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def get(self, request, *args, **kwargs):
         """
         Handle GET request - return API information
         """
         api_info = PDFService.get_pdf_api_info(self.MAX_FILE_SIZE)
         return Response(api_info)
-    
+
     def _error_response(self, error_message, status_code):
         """
         Create standardized error response
         """
-        return Response({
-            'success': False,
-            'error': error_message
-        }, status=status_code)
+        return Response({"success": False, "error": error_message}, status=status_code)
 
 
 class MultiFormatExtractView(APIView):
     """
     Unified view for extracting text from multiple file formats
-    
+
     Supports: Images (PNG, JPEG, etc.) and PDFs
-    
+
     Usage:
         POST /api/extract/
         Body:
@@ -134,60 +177,90 @@ class MultiFormatExtractView(APIView):
             - language: Language code (optional, default: 'eng')
             - save_to_db: Save to database (optional, default: true, accepts: true/false/1/0/yes/no)
     """
-    
+
     parser_classes = [MultiPartParser, FormParser]
     MAX_FILE_SIZE = 50 * 1024 * 1024
-    
+
+    @swagger_auto_schema(
+        operation_description="Auto-detect file type (image/PDF) and extract text using appropriate method",
+        operation_summary="Multi-Format Text Extraction",
+        manual_parameters=[
+            openapi.Parameter(
+                "file",
+                openapi.IN_FORM,
+                description="Image or PDF file to extract text from",
+                type=openapi.TYPE_FILE,
+                required=True,
+            ),
+            openapi.Parameter(
+                "language",
+                openapi.IN_FORM,
+                description="Language code for OCR",
+                type=openapi.TYPE_STRING,
+                default="eng",
+                enum=["eng", "kor", "uzb", "uzb_cyrl"],
+            ),
+            openapi.Parameter(
+                "save_to_db",
+                openapi.IN_FORM,
+                description="Save extraction results to database",
+                type=openapi.TYPE_BOOLEAN,
+                default=True,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Text extracted successfully",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "success": openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        "text": openapi.Schema(type=openapi.TYPE_STRING),
+                        "filename": openapi.Schema(type=openapi.TYPE_STRING),
+                        "file_type": openapi.Schema(type=openapi.TYPE_STRING),
+                    },
+                ),
+            ),
+            400: openapi.Response(description="Invalid input"),
+            500: openapi.Response(description="Server error"),
+        },
+        tags=["Multi-Format OCR"],
+    )
     def post(self, request, *args, **kwargs):
         """
         Handle POST request - auto-detect file type and extract text
         """
-        if 'file' not in request.FILES:
-            return self._error_response(
-                'No file provided',
-                status.HTTP_400_BAD_REQUEST
-            )
-        
-        file = request.FILES['file']
-        language = request.data.get('language', 'eng')
-        save_to_db = request.data.get('save_to_db', 'true').lower() in ['true', '1', 'yes']
-        
+        if "file" not in request.FILES:
+            return self._error_response("No file provided", status.HTTP_400_BAD_REQUEST)
+
+        file = request.FILES["file"]
+        language = request.data.get("language", "eng")
+        save_to_db = request.data.get("save_to_db", "true").lower() in ["true", "1", "yes"]
+
         # Validate file using service layer
-        is_valid, error_message, file_type = MultiFormatService.validate_file(
-            file, 
-            self.MAX_FILE_SIZE
-        )
-        
+        is_valid, error_message, file_type = MultiFormatService.validate_file(file, self.MAX_FILE_SIZE)
+
         if not is_valid:
             return self._error_response(error_message, status.HTTP_400_BAD_REQUEST)
-        
+
         try:
             # Process file using service layer
             result = MultiFormatService.process_file(file, language, save_to_db)
             return Response(result, status=status.HTTP_200_OK)
-        
+
         except ImportError:
-            return self._error_response(
-                'PDF support not available',
-                status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return self._error_response("PDF support not available", status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
             logger.error(f"Error processing file: {str(e)}")
-            return self._error_response(
-                f'Error processing file: {str(e)}',
-                status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
+            return self._error_response(f"Error processing file: {str(e)}", status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def get(self, request, *args, **kwargs):
         """
         Return API information
         """
         api_info = MultiFormatService.get_api_info(self.MAX_FILE_SIZE)
         return Response(api_info)
-    
+
     def _error_response(self, error_message, status_code):
         """Create error response"""
-        return Response({
-            'success': False,
-            'error': error_message
-        }, status=status_code)
+        return Response({"success": False, "error": error_message}, status=status_code)
