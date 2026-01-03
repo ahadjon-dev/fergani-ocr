@@ -2,19 +2,9 @@
 aptPkgs = [
   "tesseract-ocr",
   "tesseract-ocr-eng",
-  "tesseract-ocr-ara", 
-  "tesseract-ocr-spa",
-  "tesseract-ocr-fra",
-  "tesseract-ocr-deu",
-  "tesseract-ocr-rus",
-  "tesseract-ocr-chi-sim",
-  "tesseract-ocr-chi-tra",
-  "tesseract-ocr-jpn",
   "tesseract-ocr-kor",
-  "tesseract-ocr-hin",
-  "tesseract-ocr-por",
-  "tesseract-ocr-ita",
-  "tesseract-ocr-tur",
+  "tesseract-ocr-uzb",
+  "tesseract-ocr-uzb-cyrl",
   "poppler-utils",
   "libpq-dev"
 ]

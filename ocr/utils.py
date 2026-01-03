@@ -91,19 +91,9 @@ class OCRProcessor:
     
     SUPPORTED_LANGUAGES = {
         'eng': 'English',
-        'ara': 'Arabic',
-        'spa': 'Spanish',
-        'fra': 'French',
-        'deu': 'German',
-        'rus': 'Russian',
-        'chi_sim': 'Chinese (Simplified)',
-        'chi_tra': 'Chinese (Traditional)',
-        'jpn': 'Japanese',
         'kor': 'Korean',
-        'hin': 'Hindi',
-        'por': 'Portuguese',
-        'ita': 'Italian',
-        'tur': 'Turkish',
+        'uzb': 'Uzbek (Latin)',
+        'uzb_cyrl': 'Uzbek (Cyrillic)',
     }
     
     @staticmethod
