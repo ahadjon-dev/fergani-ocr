@@ -1,8 +1,21 @@
 [phases.setup]
-aptPkgs = ["tesseract-ocr", "tesseract-ocr-eng", "tesseract-ocr-ara", "poppler-utils", "libpq-dev"]
+aptPkgs = [
+  "tesseract-ocr",
+  "tesseract-ocr-eng",
+  "tesseract-ocr-ara", 
+  "tesseract-ocr-spa",
+  "tesseract-ocr-fra",
+  "tesseract-ocr-deu",
+  "tesseract-ocr-rus",
+  "tesseract-ocr-chi-sim",
+  "tesseract-ocr-chi-tra",
+  "tesseract-ocr-jpn",
+  "tesseract-ocr-kor",
+  "tesseract-ocr-hin",
+  "tesseract-ocr-por",
+  "tesseract-ocr-ita",
+  "tesseract-ocr-tur",
+  "poppler-utils",
+  "libpq-dev"
+]
 
-[phases.install]
-cmds = ["pip install -r requirements.txt"]
-
-[start]
-cmd = "python manage.py migrate && gunicorn fergani.wsgi:application --bind 0.0.0.0:${PORT:-8000}"
